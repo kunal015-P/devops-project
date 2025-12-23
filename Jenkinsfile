@@ -1,40 +1,35 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = "devops-app"
-    DOCKERHUB_USER = "your_dockerhub_username"
-  }
-
-  stages {
-
-    stage('Clone Repo') {
-      steps {
-        git 'https://github.com/yourname/devops-eks-project.git'
-      }
+    environment {
+        IMAGE_NAME = "kunal161/devops-app"
     }
 
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t $DOCKERHUB_USER/$IMAGE_NAME:latest .'
-      }
-    }
-
-    stage('Push Image') {
-      steps {
-        withDockerRegistry([credentialsId: 'dockerhub-creds']) {
-          sh 'docker push $DOCKERHUB_USER/$IMAGE_NAME:latest'
+    stages {
+        stage("Checkout") {
+            steps {
+                git "https://github.com/kunal015-P/devops-project.git"
+            }
         }
-      }
-    }
 
-    stage('Deploy to EKS') {
-      steps {
-        sh '''
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-        '''
-      }
+        stage("Build Image") {
+            steps {
+                sh "docker build -t $IMAGE_NAME:$BUILD_NUMBER ."
+            }
+        }
+
+        stage("Push Image") {
+            steps {
+                withDockerRegistry([credentialsId: "dockerhub-creds"]) {
+                    sh "docker push $IMAGE_NAME:$BUILD_NUMBER"
+                }
+            }
+        }
+
+        stage("Deploy to Kubernetes") {
+            steps {
+                sh "kubectl set image deployment/flask-app flask-app=$IMAGE_NAME:$BUILD_NUMBER"
+            }
+        }
     }
-  }
 }

@@ -1,12 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: devops-service
+  name: flask-service
 spec:
-  type: LOADbALANCER
+  type: LoadBalancer
   selector:
-    app: devops-app
+    app: flask-app
   ports:
     - port: 80
       targetPort: 5000
-      

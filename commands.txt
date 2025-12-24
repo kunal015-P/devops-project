@@ -152,3 +152,17 @@ kubectl logs <pod-name>
 ########################################
 # END OF PROJECT COMMANDS
 ########################################
+
+devops-project/
+├── app.py
+├── requirements.txt
+├── Dockerfile
+├── Jenkinsfile
+├── k8s/
+│   ├── app-deployment.yaml
+│   ├── app-service.yaml
+│   ├── app-config.yaml
+│   ├── mysql-deployment.yaml
+│   ├── mysql-service.yaml
+│   └── mysql-secret.yaml
+

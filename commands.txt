@@ -1,0 +1,154 @@
+########################################
+# 1. SYSTEM SETUP (EC2)
+########################################
+
+sudo yum update -y
+sudo yum install docker -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ec2-user
+newgrp docker
+
+########################################
+# 2. INSTALL kubectl
+########################################
+
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2024-12-01/bin/linux/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client
+
+########################################
+# 3. INSTALL AWS CLI
+########################################
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+
+########################################
+# 4. CONFIGURE AWS
+########################################
+
+aws configure
+
+########################################
+# 5. CREATE & CONNECT TO EKS CLUSTER
+########################################
+
+aws eks update-kubeconfig --region us-west-1 --name <cluster-name>
+kubectl get nodes
+
+########################################
+# 6. CLONE PROJECT REPOSITORY
+########################################
+
+git clone https://github.com/kunal015-P/devops-project.git
+cd devops-project
+
+########################################
+# 7. DOCKER IMAGE BUILD & PUSH
+########################################
+
+docker build -t kunal161/devops-app:latest .
+docker login
+docker push kunal161/devops-app:latest
+
+########################################
+# 8. DEPLOY MYSQL TO KUBERNETES
+########################################
+
+kubectl apply -f k8s/mysql-secret.yaml
+kubectl apply -f k8s/mysql-deployment.yaml
+kubectl apply -f k8s/mysql-service.yaml
+
+kubectl get pods
+kubectl get svc
+
+########################################
+# 9. LOGIN TO MYSQL POD
+########################################
+
+kubectl get pods | grep mysql
+kubectl exec -it <mysql-pod-name> -- mysql -u root -p
+
+# Inside MySQL
+SHOW DATABASES;
+CREATE DATABASE devopsdb;
+USE devopsdb;
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100)
+);
+EXIT;
+
+########################################
+# 10. DEPLOY FLASK APPLICATION
+########################################
+
+kubectl apply -f k8s/app-config.yaml
+kubectl apply -f k8s/app-deployment.yaml
+kubectl apply -f k8s/app-service.yaml
+
+kubectl get pods
+kubectl get svc
+
+########################################
+# 11. VERIFY ENV VARIABLES IN POD
+########################################
+
+kubectl exec $(kubectl get pods -l app=flask-app -o jsonpath="{.items[0].metadata.name}") -- env | grep DB_
+
+########################################
+# 12. RESTART FLASK PODS (CONFIGMAP UPDATE)
+########################################
+
+kubectl rollout restart deployment flask-app
+
+########################################
+# 13. CHECK APPLICATION LOGS
+########################################
+
+kubectl logs -l app=flask-app --tail=50
+
+########################################
+# 14. ACCESS APPLICATION
+########################################
+
+# Browser:
+# http://<ELB-DNS>/
+# http://<ELB-DNS>/add?name=Kunal
+
+########################################
+# 15. VERIFY DATA IN MYSQL
+########################################
+
+kubectl exec -it <mysql-pod-name> -- mysql -u root -p
+
+# Inside MySQL
+USE devopsdb;
+SELECT * FROM users;
+EXIT;
+
+########################################
+# 16. TROUBLESHOOTING COMMANDS
+########################################
+
+kubectl get deployments
+kubectl describe pod <pod-name>
+kubectl delete pod -l app=flask-app
+kubectl get configmap app-config -o yaml
+kubectl get secret mysql-secret -o yaml
+kubectl logs <pod-name>
+
+########################################
+# 17. JENKINS (CI/CD)
+########################################
+
+# Jenkins uses Jenkinsfile automatically
+# No CLI command required once webhook is configured
+
+########################################
+# END OF PROJECT COMMANDS
+########################################

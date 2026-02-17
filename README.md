@@ -1,5 +1,5 @@
 # devops-project
-Project Explanation (Interview-Ready)
+Project Explanation 
 
 This project is a full DevOps deployment of a Flask application with a MySQL backend using Kubernetes on AWS.
 
